@@ -31,6 +31,10 @@ const jobRequestSchema = new mongoose.Schema({
     enum: ['Open', 'In Progress', 'Closed'],
     default: 'Open'
   },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   createdAt: {
     type: Date,
     default: Date.now

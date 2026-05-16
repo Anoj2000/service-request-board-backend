@@ -1,15 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const JobRequest = require('../models/JobRequest');
+const auth = require('../middleware/auth'); // Import auth middleware
 
-// GET all jobs with filters
+// GET all jobs - NO AUTH REQUIRED (anyone can view)
 router.get('/', async (req, res, next) => {
   try {
-    const { category, status } = req.query;
+    const { category, status, search } = req.query;
     const filter = {};
     
     if (category) filter.category = category;
     if (status) filter.status = status;
+    
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
     
     const jobs = await JobRequest.find(filter).sort({ createdAt: -1 });
     res.json(jobs);
@@ -18,7 +26,7 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// GET single job
+// GET single job - NO AUTH REQUIRED
 router.get('/:id', async (req, res, next) => {
   try {
     const job = await JobRequest.findById(req.params.id);
@@ -31,17 +39,20 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// POST new job
-router.post('/', async (req, res, next) => {
+// POST new job - AUTH REQUIRED
+router.post('/', auth, async (req, res, next) => {
   try {
     const { title, description, category, location, contactName, contactEmail } = req.body;
     
-    // Validation
     if (!title || !description || !category || !location || !contactName || !contactEmail) {
       return res.status(400).json({ error: 'All fields are required' });
     }
     
-    const newJob = new JobRequest(req.body);
+    const newJob = new JobRequest({
+      ...req.body,
+      createdBy: req.user.userId // Add user who created it
+    });
+    
     await newJob.save();
     res.status(201).json(newJob);
   } catch (error) {
@@ -49,7 +60,7 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-// PATCH update status
+// PATCH update status - NO AUTH (tradespeople can update)
 router.patch('/:id', async (req, res, next) => {
   try {
     const { status } = req.body;
@@ -74,8 +85,8 @@ router.patch('/:id', async (req, res, next) => {
   }
 });
 
-// DELETE job
-router.delete('/:id', async (req, res, next) => {
+// DELETE job - AUTH REQUIRED
+router.delete('/:id', auth, async (req, res, next) => {
   try {
     const job = await JobRequest.findByIdAndDelete(req.params.id);
     
