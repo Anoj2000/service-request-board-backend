@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const JobRequest = require('../models/JobRequest');
-const auth = require('../middleware/auth'); // Import auth middleware
+const auth = require('../middleware/auth');
 
 // GET all jobs - NO AUTH REQUIRED (anyone can view)
 router.get('/', async (req, res, next) => {
@@ -50,7 +50,7 @@ router.post('/', auth, async (req, res, next) => {
     
     const newJob = new JobRequest({
       ...req.body,
-      createdBy: req.user.userId // Add user who created it
+      createdBy: req.user.userId
     });
     
     await newJob.save();
@@ -72,7 +72,7 @@ router.patch('/:id', async (req, res, next) => {
     const job = await JobRequest.findByIdAndUpdate(
       req.params.id,
       { status },
-      { new: true }
+      { returnDocument: 'after' }  // ✅ FIXED - was { new: 'after' }
     );
     
     if (!job) {
