@@ -72,7 +72,7 @@ router.patch('/:id', async (req, res, next) => {
     const job = await JobRequest.findByIdAndUpdate(
       req.params.id,
       { status },
-      { returnDocument: 'after' }  // ✅ FIXED - was { new: 'after' }
+      { returnDocument: 'after' }  
     );
     
     if (!job) {
